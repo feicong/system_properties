@@ -34,46 +34,53 @@
 
 #include "private/bionic_defs.h"
 
-static SystemProperties system_properties;
+static SystemProperties system_properties;  // 系统属性实例
 static_assert(__is_trivially_constructible(SystemProperties),
-              "System Properties must be trivially constructable");
+              "系统属性必须是可平凡构造的");
 
-// This is public because it was exposed in the NDK. As of 2017-01, ~60 apps reference this symbol.
-// It is set to nullptr and never modified.
+// 这是公共的，因为它在NDK中暴露。截至2017-01，约60个应用引用此符号
+// 它被设置为nullptr且从不修改
 __BIONIC_WEAK_VARIABLE_FOR_NATIVE_BRIDGE
 prop_area* __system_property_area__ = nullptr;
 
+// 初始化系统属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_properties_init() {
   return system_properties.Init(PROP_FILENAME) ? 0 : -1;
 }
 
+// 设置系统属性文件名（已废弃）
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_set_filename(const char*) {
-  return -1;
+  return -1;  // 始终返回失败
 }
 
+// 初始化属性区域
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_area_init() {
   bool fsetxattr_failed = false;
   return system_properties.AreaInit(PROP_FILENAME, &fsetxattr_failed) && !fsetxattr_failed ? 0 : -1;
 }
 
+// 获取属性区域序列号
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 uint32_t __system_property_area_serial() {
   return system_properties.AreaSerial();
 }
 
+// 查找系统属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 const prop_info* __system_property_find(const char* name) {
   return system_properties.Find(name);
 }
 
+// 读取系统属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_read(const prop_info* pi, char* name, char* value) {
   return system_properties.Read(pi, name, value);
 }
 
+// 通过回调读取系统属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 void __system_property_read_callback(const prop_info* pi,
                                      void (*callback)(void* cookie, const char* name,
@@ -82,59 +89,67 @@ void __system_property_read_callback(const prop_info* pi,
   return system_properties.ReadCallback(pi, callback, cookie);
 }
 
+// 获取系统属性值
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_get(const char* name, char* value) {
   return system_properties.Get(name, value);
 }
 
+// 更新系统属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_update(prop_info* pi, const char* value, unsigned int len) {
   return system_properties.Update(pi, value, len);
 }
 
+// 删除系统属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_delete(const char *name, bool prune) {
   return system_properties.Delete(name, prune);
 }
 
+// 获取系统属性的SELinux上下文
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 const char* __system_property_get_context(const char *name) {
   return system_properties.GetContext(name);
 }
 
+// 添加系统属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_add(const char* name, unsigned int namelen, const char* value,
                           unsigned int valuelen) {
   return system_properties.Add(name, namelen, value, valuelen);
 }
 
+// 获取属性序列号
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 uint32_t __system_property_serial(const prop_info* pi) {
-  // N.B. a previous version of this function was much heavier-weight
-  // and enforced acquire semantics, so give our load here acquire
-  // semantics just in case somebody depends on
-  // __system_property_serial enforcing memory order, e.g., in case
-  // someone spins on the result of this function changing before
-  // loading some value.
+  // 注意：此函数的早期版本更重量级
+  // 并强制获取语义，所以在这里给我们的加载获取语义，
+  // 以防有人依赖__system_property_serial强制内存顺序，
+  // 例如，有人在加载某个值之前在此函数更改的结果上自旋
   return atomic_load_explicit(&pi->serial, memory_order_acquire);
 }
 
+// 等待任意属性变化
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 uint32_t __system_property_wait_any(uint32_t old_serial) {
   return system_properties.WaitAny(old_serial);
 }
 
+// 等待特定属性变化
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 bool __system_property_wait(const prop_info* pi, uint32_t old_serial, uint32_t* new_serial_ptr,
                             const timespec* relative_timeout) {
   return system_properties.Wait(pi, old_serial, new_serial_ptr, relative_timeout);
 }
 
+// 查找第n个属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 const prop_info* __system_property_find_nth(unsigned n) {
   return system_properties.FindNth(n);
 }
 
+// 遍历所有属性
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int __system_property_foreach(void (*propfn)(const prop_info* pi, void* cookie), void* cookie) {
   return system_properties.Foreach(propfn, cookie);
